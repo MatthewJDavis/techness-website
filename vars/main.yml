@@ -18,4 +18,3 @@ certbot_admin_email: "{{ letsencrypt_email }}"
 certbot_certs:
   - domains:
       - "{{ inventory_hostname }}"
-      - "www.{{ inventory_hostname }}"
