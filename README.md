@@ -30,4 +30,18 @@ To run playbook.
 ansible-playbook -i inventory  main.yml
 ```
 
+## Azure resources
+
+azure-playbook.yml contains the tasks to create the resources for the server in Azure.
+
+To set the [credentials]:
+
+```bash
+export AZURE_CLIENT_ID=
+export AZURE_SECRET=
+export AZURE_SUBSCRIPTION_ID=
+export AZURE_TENANT=
+```
+
 [Ansible for DevOps]: https://www.ansiblefordevops.com/
+[credentials]: https://docs.ansible.com/ansible/latest/scenario_guides/guide_azure.html

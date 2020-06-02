@@ -1,0 +1,98 @@
+---
+- hosts: localhost
+  vars:
+    - rg_name: website-test
+    - location: eastus2
+    - vnet_name: webvnet
+    - subnet_name: subnet001
+    - pub_ip_name: webip001
+    - sg_name: secgroup001
+    - nic_name: webnic001
+    - vm_name: webtest1
+    - user_name: adminUser
+    - ssh_key_data: 
+    - ssh_key_path: '/home/matt/.ssh/azure-linux/id_rsa.pub'
+
+  tasks:
+    - name: Create resource group.
+      azure_rm_resourcegroup:
+          name: website-test
+          tags:
+            project: "let's encrypt"
+            Description: "webserver that has let's encrypt provisioned certificate"
+          state: present
+          location: eastus2
+
+    # Network.
+    - name: Create VNET.
+      azure_rm_virtualnetwork:
+        resource_group: "{{ rg_name }}"
+        name: "{{ vnet_name }}"
+        address_prefixes: "10.10.0.0/16"
+
+    - name: Add subnet.
+      azure_rm_subnet:
+        resource_group: "{{ rg_name }}"
+        name: "{{ subnet_name }}"
+        address_prefix: "10.10.0.0/24"
+        virtual_network: "{{ vnet_name }}"
+    
+    - name: Create public IP.
+      azure_rm_publicipaddress:
+        resource_group: "{{ rg_name }}"
+        allocation_method: Static
+        name: "{{ pub_ip_name }}"
+      register: output_ip_address
+
+    - name: Output public IP address.
+      debug:
+        msg: "{{ output_ip_address.state.ip_address }}"
+
+    # Security group.
+    - name: Create security group that allows SSH
+      azure_rm_securitygroup:
+        resource_group: "{{ rg_name }}"
+        name: "{{ sg_name }}"
+        rules:
+          - name: SSH
+            protocol: Tcp
+            destination_port_range: 22
+            access: Allow
+            priority: 101
+            direction: Inbound
+
+          - name: 'AllowWebPorts'
+            protocol: Tcp
+            destination_port_range:
+              - 80
+              - 443
+            access: Allow
+            priority: 102
+            direction: Inbound
+
+    - name: Create NIC.
+      azure_rm_networkinterface:
+        resource_group: "{{ rg_name }}"
+        name: "{{ nic_name }}"
+        virtual_network: "{{ vnet_name }}"
+        subnet: "{{ subnet_name }}"
+        public_ip_name: "{{ pub_ip_name }}"
+        security_group: "{{ sg_name }}"
+
+    - name: Create virtual machine.
+      azure_rm_virtualmachine:
+        resource_group: "{{ rg_name }}"
+        name: "{{ vm_name }}"
+        vm_size: Standard_B1s
+        managed_disk_type: Premium_LRS
+        network_interfaces: "{{ nic_name }}"
+        ssh_password_enabled: false
+        admin_username: "{{ user_name }}"
+        ssh_public_keys:
+          - path: /home/adminUser/.ssh/authorized_keys
+            key_data: "{{ ssh_key_data }}"
+        image:
+          offer: UbuntuServer
+          publisher: Canonical
+          sku: '18.04-LTS'
+          version: latest
