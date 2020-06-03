@@ -1,22 +1,22 @@
 ---
 - hosts: localhost
   vars:
-    - rg_name: website-test
+    - rg_name: website
     - location: eastus2
-    - vnet_name: webvnet
-    - subnet_name: subnet001
-    - pub_ip_name: webip001
-    - sg_name: secgroup001
-    - nic_name: webnic001
-    - vm_name: webtest1
-    - user_name: adminUser
-    - ssh_key_data: 
-    - ssh_key_path: '/home/matt/.ssh/azure-linux/id_rsa.pub'
+    - vm_name: web1
+    - vnet_name: "{{ rg_name }}-vnet"
+    - subnet_name: default
+    - ip_name: "{{ vm_name }}-ip"
+    - nsg_name: "{{ vm_name }}-nsg"
+    - nic_name: "{{ vm_name }}-nic"
+    - user_name: matt
+    - ssh_key_data:
+    - ssh_key_path: /home/matt/.ssh/authorized_keys
 
   tasks:
     - name: Create resource group.
       azure_rm_resourcegroup:
-          name: website-test
+          name: website
           tags:
             project: "let's encrypt"
             Description: "webserver that has let's encrypt provisioned certificate"
@@ -41,7 +41,7 @@
       azure_rm_publicipaddress:
         resource_group: "{{ rg_name }}"
         allocation_method: Static
-        name: "{{ pub_ip_name }}"
+        name: "{{ ip_name }}"
       register: output_ip_address
 
     - name: Output public IP address.
@@ -52,7 +52,7 @@
     - name: Create security group that allows SSH
       azure_rm_securitygroup:
         resource_group: "{{ rg_name }}"
-        name: "{{ sg_name }}"
+        name: "{{ nsg_name }}"
         rules:
           - name: SSH
             protocol: Tcp
@@ -76,8 +76,8 @@
         name: "{{ nic_name }}"
         virtual_network: "{{ vnet_name }}"
         subnet: "{{ subnet_name }}"
-        public_ip_name: "{{ pub_ip_name }}"
-        security_group: "{{ sg_name }}"
+        public_ip_name: "{{ ip_name }}"
+        security_group: "{{ nsg_name }}"
 
     - name: Create virtual machine.
       azure_rm_virtualmachine:
@@ -89,7 +89,7 @@
         ssh_password_enabled: false
         admin_username: "{{ user_name }}"
         ssh_public_keys:
-          - path: /home/adminUser/.ssh/authorized_keys
+          - path: "{{ ssh_key_path }}"
             key_data: "{{ ssh_key_data }}"
         image:
           offer: UbuntuServer
