@@ -10,7 +10,7 @@
     - nsg_name: "{{ vm_name }}-nsg"
     - nic_name: "{{ vm_name }}-nic"
     - user_name: matt
-    - ssh_key_data:
+    - ssh_key_data: "{{ lookup('file', '~/.ssh/azure-linux/id_rsa.pub') }}"
     - ssh_key_path: /home/matt/.ssh/authorized_keys
 
   tasks:
